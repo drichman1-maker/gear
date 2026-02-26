@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Filter, ShoppingCart, AlertCircle, ChevronRight, Tag } from 'lucide-react';
+import { Search, Filter, ShoppingCart, AlertCircle, ChevronRight, Tag, Menu, X } from 'lucide-react';
 import { GearAPI, Product } from '../lib/api';
 
 const CATEGORIES = [
   { id: 'all', name: 'All Products', icon: '🛒' },
   { id: 'strollers', name: 'Strollers', icon: '🚼' },
   { id: 'car-seats', name: 'Car Seats', icon: '🚗' },
-  { id: 'cribs', name: 'Cribs & Bassinets', icon: '🛏️' },
+  { id: 'cribs', name: 'Cribs', icon: '🛏️' },
   { id: 'monitors', name: 'Monitors', icon: '📹' },
   { id: 'carriers', name: 'Carriers', icon: '👶' },
-  { id: 'breast-pumps', name: 'Breast Pumps', icon: '🍼' },
+  { id: 'breast-pumps', name: 'Pumps', icon: '🍼' },
 ];
 
 const RETAILER_COLORS: Record<string, string> = {
@@ -26,6 +26,7 @@ const Products: React.FC = () => {
   const [retailerPrices, setRetailerPrices] = useState<any[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const api = new GearAPI();
 
   useEffect(() => {
@@ -59,7 +60,7 @@ const Products: React.FC = () => {
       <section className="products-hero">
         <div className="container">
           <h1>Browse Products</h1>
-          <p className="subtitle">Compare prices across top retailers. Find the best deals on premium baby gear.</p>
+          <p className="subtitle">Compare prices across top retailers. Find the best deals.</p>
           
           <div className="search-bar">
             <Search size={20} className="search-icon" />
@@ -73,6 +74,32 @@ const Products: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* Mobile Category Toggle */}
+      <div className="mobile-category-nav">
+        <button 
+          className="mobile-menu-btn"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+        >
+          {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+          <span>Categories</span>
+        </button>
+        <div className={`mobile-category-list ${mobileMenuOpen ? 'open' : ''}`}>
+          {CATEGORIES.map((cat) => (
+            <button
+              key={cat.id}
+              className={`mobile-cat-btn ${selectedCategory === cat.id ? 'active' : ''}`}
+              onClick={() => {
+                setSelectedCategory(cat.id);
+                setMobileMenuOpen(false);
+              }}
+            >
+              <span className="cat-icon">{cat.icon}</span>
+              <span className="cat-name">{cat.name}</span>
+            </button>
+          ))}
+        </div>
+      </div>
 
       <div className="container products-layout">
         <aside className="category-sidebar">
@@ -93,11 +120,11 @@ const Products: React.FC = () => {
 
         <main className="products-grid-section">
           <div className="results-header">
-            <span>{filteredProducts.length} products found</span>
+            <span>{filteredProducts.length} products</span>
             <select className="sort-select">
-              <option>Sort by: Best Price</option>
-              <option>Sort by: Name</option>
-              <option>Sort by: Brand</option>
+              <option>Best Price</option>
+              <option>Name</option>
+              <option>Brand</option>
             </select>
           </div>
 
@@ -105,6 +132,7 @@ const Products: React.FC = () => {
             {filteredProducts.map((product) => {
               const bestPrice = getBestPrice(product.slug);
               const allPrices = getAllPrices(product.slug);
+              const top3Prices = allPrices.slice(0, 3);
               
               return (
                 <div key={product.slug} className="product-card-v2">
@@ -126,7 +154,7 @@ const Products: React.FC = () => {
                       </div>
                       
                       <div className="retailer-list">
-                        {allPrices.slice(0, 3).map((price, idx) => (
+                        {top3Prices.map((price, idx) => (
                           <div key={idx} className="retailer-row">
                             <div className="retailer-info">
                               <span 
