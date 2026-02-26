@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Filter, ShoppingCart, AlertCircle, ChevronRight, Tag, Menu, X } from 'lucide-react';
+import { Search, Filter, ShoppingCart, AlertCircle, ChevronRight, Tag } from 'lucide-react';
 import { GearAPI, Product } from '../lib/api';
 
 const CATEGORIES = [
@@ -26,7 +26,6 @@ const Products: React.FC = () => {
   const [retailerPrices, setRetailerPrices] = useState<any[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const api = new GearAPI();
 
   useEffect(() => {
@@ -75,30 +74,18 @@ const Products: React.FC = () => {
         </div>
       </section>
 
-      {/* Mobile Category Toggle */}
+      {/* Mobile Category Horizontal Scroll - Always Visible */}
       <div className="mobile-category-nav">
-        <button 
-          className="mobile-menu-btn"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-        >
-          {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
-          <span>Categories</span>
-        </button>
-        <div className={`mobile-category-list ${mobileMenuOpen ? 'open' : ''}`}>
-          {CATEGORIES.map((cat) => (
-            <button
-              key={cat.id}
-              className={`mobile-cat-btn ${selectedCategory === cat.id ? 'active' : ''}`}
-              onClick={() => {
-                setSelectedCategory(cat.id);
-                setMobileMenuOpen(false);
-              }}
-            >
-              <span className="cat-icon">{cat.icon}</span>
-              <span className="cat-name">{cat.name}</span>
-            </button>
-          ))}
-        </div>
+        {CATEGORIES.map((cat) => (
+          <button
+            key={cat.id}
+            className={`mobile-cat-btn ${selectedCategory === cat.id ? 'active' : ''}`}
+            onClick={() => setSelectedCategory(cat.id)}
+          >
+            <span className="cat-icon">{cat.icon}</span>
+            <span className="cat-name">{cat.name}</span>
+          </button>
+        ))}
       </div>
 
       <div className="container products-layout">
