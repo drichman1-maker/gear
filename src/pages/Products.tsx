@@ -1,24 +1,51 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Filter, ShoppingCart, AlertCircle, ChevronRight, Tag } from 'lucide-react';
+import { Search, ChevronRight } from 'lucide-react';
 import { GearAPI, Product } from '../lib/api';
 
 const CATEGORIES = [
-  { id: 'all', name: 'All Products', icon: '🛒' },
-  { id: 'strollers', name: 'Strollers', icon: '🚼' },
-  { id: 'car-seats', name: 'Car Seats', icon: '🚗' },
-  { id: 'cribs', name: 'Cribs', icon: '🛏️' },
-  { id: 'monitors', name: 'Monitors', icon: '📹' },
-  { id: 'carriers', name: 'Carriers', icon: '👶' },
-  { id: 'breast-pumps', name: 'Pumps', icon: '🍼' },
+  { id: 'all', name: 'All' },
+  { id: 'strollers', name: 'Strollers' },
+  { id: 'car-seats', name: 'Car Seats' },
+  { id: 'cribs', name: 'Cribs' },
+  { id: 'monitors', name: 'Monitors' },
+  { id: 'carriers', name: 'Carriers' },
+  { id: 'breast-pumps', name: 'Pumps' },
 ];
 
+const CATEGORY_LABELS: Record<string, string> = {
+  'all': 'All Products',
+  'strollers': 'Strollers',
+  'car-seats': 'Car Seats',
+  'cribs': 'Cribs & Sleep',
+  'monitors': 'Monitors',
+  'carriers': 'Carriers',
+  'breast-pumps': 'Breast Pumps',
+};
+
 const RETAILER_COLORS: Record<string, string> = {
-  'Buy Buy Baby': '#E31D1A',
-  'Amazon': '#FF9900',
-  'Target': '#CC0000',
-  'Nordstrom': '#000000',
-  'Babylist': '#6B21A8',
+  'Buy Buy Baby': '#F472B6',
+  'Amazon': '#A78BFA',
+  'Target': '#22D3EE',
+};
+
+const getRetailerSlug = (name: string): string => {
+  const slugMap: Record<string, string> = {
+    'Buy Buy Baby': 'buybuybaby',
+    'Amazon': 'amazon',
+    'Target': 'target',
+  };
+  return slugMap[name] || name.toLowerCase().replace(/\s+/g, '-');
+};
+
+const extractAsin = (url: string): string => {
+  const amazonMatch = url.match(/\/dp\/([A-Z0-9]{10})/i);
+  if (amazonMatch) return amazonMatch[1];
+  const bbbMatch = url.match(/\/dp\/([A-Z0-9-]+)/i);
+  if (bbbMatch) return bbbMatch[1];
+  const targetMatch = url.match(/\/p\/([^\?]+)/i);
+  if (targetMatch) return targetMatch[1];
+  return url;
 };
 
 const Products: React.FC = () => {
@@ -54,143 +81,93 @@ const Products: React.FC = () => {
     return retailerPrices.filter(p => p.product_slug === slug).sort((a, b) => a.price - b.price);
   };
 
+  const getStockStatus = (slug: string) => {
+    const prices = getAllPrices(slug);
+    if (prices.length === 0) return 'no-data';
+    const inStock = prices.filter(p => p.availability === 'In Stock');
+    if (inStock.length === 0) return 'out';
+    if (inStock.length === 1) return 'limited';
+    return 'in-stock';
+  };
+
   return (
     <div className="products-page">
-      <section className="products-hero">
-        <div className="container">
-          <h1>Browse Products</h1>
-          <p className="subtitle">Compare prices across top retailers. Find the best deals.</p>
-          
-          <div className="search-bar">
-            <Search size={20} className="search-icon" />
-            <input
-              type="text"
-              placeholder="Search products..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="search-input"
-            />
-          </div>
+      <div className="container">
+        {/* Breadcrumb */}
+        <div className="breadcrumb">
+          <Link to="/">Home</Link>
+          <ChevronRight size={14} />
+          <span>Products</span>
+          {selectedCategory !== 'all' && (
+            <>
+              <ChevronRight size={14} />
+              <span>{CATEGORY_LABELS[selectedCategory]}</span>
+            </>
+          )}
         </div>
-      </section>
 
-      {/* Mobile Category Horizontal Scroll - Always Visible */}
-      <div className="mobile-category-nav">
-        {CATEGORIES.map((cat) => (
-          <button
-            key={cat.id}
-            className={`mobile-cat-btn ${selectedCategory === cat.id ? 'active' : ''}`}
-            onClick={() => setSelectedCategory(cat.id)}
-          >
-            <span className="cat-icon">{cat.icon}</span>
-            <span className="cat-name">{cat.name}</span>
-          </button>
-        ))}
-      </div>
+        <div className="products-header">
+          <h1>{CATEGORY_LABELS[selectedCategory]}</h1>
+          <p>Compare prices across top retailers</p>
+        </div>
 
-      <div className="container products-layout">
-        <aside className="category-sidebar">
-          <h3><Filter size={18} /> Categories</h3>
-          <div className="category-list">
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat.id}
-                className={`category-btn ${selectedCategory === cat.id ? 'active' : ''}`}
-                onClick={() => setSelectedCategory(cat.id)}
-              >
-                <span className="cat-icon">{cat.icon}</span>
-                <span className="cat-name">{cat.name}</span>
-              </button>
-            ))}
-          </div>
-        </aside>
+        <div className="search-bar">
+          <Search size={18} />
+          <input
+            type="text"
+            placeholder="Search products..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
 
-        <main className="products-grid-section">
-          <div className="results-header">
-            <span>{filteredProducts.length} products</span>
-            <select className="sort-select">
-              <option>Best Price</option>
-              <option>Name</option>
-              <option>Brand</option>
-            </select>
-          </div>
+        <div className="category-filter">
+          {CATEGORIES.map((cat) => (
+            <button
+              key={cat.id}
+              className={selectedCategory === cat.id ? 'active' : ''}
+              onClick={() => setSelectedCategory(cat.id)}
+            >
+              {cat.name}
+            </button>
+          ))}
+        </div>
 
-          <div className="products-grid">
-            {filteredProducts.map((product) => {
-              const bestPrice = getBestPrice(product.slug);
-              const allPrices = getAllPrices(product.slug);
-              const top3Prices = allPrices.slice(0, 3);
-              
-              return (
-                <div key={product.slug} className="product-card-v2">
-                  <div className="product-image-v2">
-                    <img src={product.image_url} alt={product.name} />
-                    <span className="category-badge">{CATEGORIES.find(c => c.id === product.category)?.name || product.category}</span>
-                  </div>
-                  
-                  <div className="product-info-v2">
-                    <span className="brand-v2">{product.brand}</span>
-                    <h3 className="product-name-v2">{product.name}</h3>
-                    
-                    <div className="price-comparison">
-                      <div className="price-header">
-                        <span className="price-label-v2">Best Price</span>
-                        {bestPrice && (
-                          <span className="best-price-badge">${bestPrice.price}</span>
-                        )}
-                      </div>
-                      
-                      <div className="retailer-list">
-                        {top3Prices.map((price, idx) => (
-                          <div key={idx} className="retailer-row">
-                            <div className="retailer-info">
-                              <span 
-                                className="retailer-dot" 
-                                style={{ backgroundColor: RETAILER_COLORS[price.retailer_name] || '#666' }}
-                              />
-                              <span className="retailer-name">{price.retailer_name}</span>
-                            </div>
-                            <div className="retailer-price-action">
-                              <span className={`retailer-price ${idx === 0 ? 'lowest' : ''}`}>
-                                ${price.price}
-                              </span>
-                              <a 
-                                href={price.affiliate_url} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="btn btn-sm btn-view-deal"
-                              >
-                                View Deal
-                              </a>
-                            </div>
-                          </div>
-                        ))}
-                        {allPrices.length > 3 && (
-                          <Link to={`/buy/${product.slug}`} className="view-more-deals">
-                            View {allPrices.length - 3} more deals <ChevronRight size={14} />
-                          </Link>
-                        )}
-                      </div>
+        {/* Products Grid - Card Style */}
+        <div className="products-grid">
+          {filteredProducts.map((product) => {
+            const bestPrice = getBestPrice(product.slug);
+            const allPrices = getAllPrices(product.slug);
+            const stockStatus = getStockStatus(product.slug);
+            const hasDeal = bestPrice && bestPrice.price < product.msrp;
+            
+            return (
+              <Link key={product.slug} to={`/buy/${product.slug}`} className="product-grid-card">
+                <div className="product-card-body">
+                  <span className="product-category-tag">{product.category}</span>
+                  <span className="product-brand">{product.brand}</span>
+                  <h3 className="product-name">{product.name}</h3>
+                  <div className="product-card-footer">
+                    <div className="price-info">
+                      <span className="best-price">${bestPrice?.price || product.msrp}</span>
+                      {hasDeal && <span className="msrp">${product.msrp}</span>}
                     </div>
-                    
-                    <div className="msrp-row">
-                      <span className="msrp-label">MSRP:</span>
-                      <span className="msrp-value">${product.msrp}</span>
-                    </div>
+                    {bestPrice && (
+                      <span className="retailer-label">from {bestPrice.retailer_name}</span>
+                    )}
                   </div>
                 </div>
-              );
-            })}
-          </div>
+              </Link>
+            );
+          })}
+        </div>
 
-          {filteredProducts.length === 0 && (
-            <div className="no-results">
-              <AlertCircle size={48} />
-              <h3>No products found</h3>
-              <p>Try adjusting your search or category filter</p>
-            </div>
-          )}
-        </main>
+        {filteredProducts.length === 0 && (
+          <div className="no-results">
+            <h3>No products found</h3>
+            <p>Try adjusting your search or category filter</p>
+          </div>
+        )}
       </div>
     </div>
   );

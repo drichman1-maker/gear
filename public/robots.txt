@@ -1,0 +1,11 @@
+# BabyGear - Baby Product Price Tracker
+# https://babygearhere.com
+
+User-agent: *
+Allow: /
+
+# Crawl delay
+Crawl-delay: 1
+
+# Sitemap
+Sitemap: https://babygearhere.com/sitemap.xml
