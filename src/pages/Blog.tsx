@@ -32,6 +32,33 @@ const Blog = () => {
       readTime: '6 min read',
       category: 'Planning',
       icon: ClipboardList
+    },
+    {
+      id: 'nursery-setup',
+      title: 'Creating the Perfect Nursery: Room-by-Room Guide',
+      excerpt: 'From cribs to changing tables, learn how to set up a functional and beautiful nursery space.',
+      date: 'March 1, 2026',
+      readTime: '7 min read',
+      category: 'Nursery',
+      icon: Heart
+    },
+    {
+      id: 'diaper-bag-essentials',
+      title: 'What to Pack in Your Diaper Bag: The Ultimate Checklist',
+      excerpt: 'Never be caught unprepared. Our essential packing list for outings with your little one.',
+      date: 'March 3, 2026',
+      readTime: '5 min read',
+      category: 'Checklist',
+      icon: ShoppingBag
+    },
+    {
+      id: 'breastfeeding-gear',
+      title: 'Breastfeeding Essentials: Pumps, Pillows, and More',
+      excerpt: 'The must-have items that make breastfeeding and pumping easier for new moms.',
+      date: 'March 4, 2026',
+      readTime: '6 min read',
+      category: 'Feeding',
+      icon: Heart
     }
   ];
 
